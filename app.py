@@ -25,7 +25,7 @@ except ImportError:
 # ==========================================
 # 2. DATA LOADING
 # ==========================================
-CSV_FILE_PATH = 'exported_df.csv'
+CSV_FILE_PATH = 'Data/exported_df.csv'
 
 @st.cache_data
 def load_data(file_path):

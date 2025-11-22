@@ -32,7 +32,7 @@ except ImportError:
 # ==========================================
 # Set the CSV file path - assumes it's in the same directory as app.py
 script_dir = os.path.dirname(os.path.abspath(__file__))
-CSV_FILE_PATH = os.path.join(script_dir, 'exported_df.csv')
+CSV_FILE_PATH = os.path.join(script_dir, 'reduced_exported_df.csv.gz')
 
 @st.cache_data
 def load_data(file_path):
@@ -42,7 +42,7 @@ def load_data(file_path):
         return None
     try:
         # Load only first 5000 rows to speed up loading
-        df = pd.read_csv(file_path, nrows=5000)
+        df = pd.read_csv(file_path, nrows=5000, compression='gzip')
         df.columns = df.columns.str.strip()
         return df
     except FileNotFoundError:

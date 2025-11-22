@@ -238,7 +238,7 @@ if 'selected_flight' not in st.session_state:
     st.session_state.selected_flight = None
 
 # --- LOGO & TITLE SECTION ---
-col_logo, col_text = st.columns([2, 2])
+col_logo, col_text = st.columns([2, 3])
 with col_logo:
     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Southwest_Airlines_logo_2014.svg/320px-Southwest_Airlines_logo_2014.svg.png", width=500)
 
@@ -253,10 +253,23 @@ if TEST_DATA_DF is None:
     st.info(f"Looking for: {CSV_FILE_PATH}")
     st.stop()
 
+
 # --- PAGE 1: LANDING ---
 if st.session_state.page == 'landing':
-    st.markdown("#### Enter your flight number to get started!")
-    st.markdown("---")
+    # UPDATED: Changed <h2> to <div> to bypass global Blue styling
+    st.markdown("""
+        <div style='
+            text-align: left; 
+            color: #000000; 
+            font-size: 28px; 
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-weight: 800; 
+            margin-bottom: 20px; 
+        '>
+            Enter your flight number to get started!
+        </div>
+    """, unsafe_allow_html=True)
+    
     
     # Step 1: Get unique flight numbers
     flight_numbers = []

@@ -415,7 +415,7 @@ elif st.session_state.page == 'result':
     with col_status:
         st.markdown(f"### {status_title}")
         st.write(status_msg)
-    '''
+    
     st.markdown("---")
     st.markdown("### Contributing Factors")
     
@@ -489,4 +489,4 @@ elif st.session_state.page == 'result':
                 'Value': [f"{weather['tavg']:.1f}", f"{weather['prcp']:.1f}", f"{weather['snow']:.1f}", f"{weather['wspd']:.1f}", f"{weather['pres']:.1f}"]
             }
             st.dataframe(pd.DataFrame(debug_data), use_container_width=True)
-    '''
+    

@@ -2,6 +2,7 @@ import streamlit as st
 import datetime
 import os
 import pickle
+import airportsdata
 
 # configure encoders
 with open('./Dashboard/label_encoders.pkl', 'rb') as file:

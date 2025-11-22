@@ -6,4 +6,6 @@ matplotlib
 seaborn
 lightgbm
 tensorflow
+plotly
 airportsdata
+pyarrow

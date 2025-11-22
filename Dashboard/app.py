@@ -12,7 +12,7 @@ with open('label_encoders.pkl', 'rb') as file:
 # 1. APP CONFIGURATION & SAFE IMPORTS
 # ==========================================
 st.set_page_config(
-    page_title="Flight Delay Predictor",
+    page_title="Flight Delay Predictor ✈️",
     page_icon="✈️",
     layout="centered"
 )
@@ -254,9 +254,7 @@ if TEST_DATA_DF is None:
 
 # --- PAGE 1: LANDING ---
 if st.session_state.page == 'landing':
-    st.markdown("### 🕒 Analyze Flight Delay Risk")
-    st.markdown("Enter your flight number to get started!")
-    
+    st.markdown("#### Enter your flight number to get started!")
     st.markdown("---")
     
     # Step 1: Get unique flight numbers
@@ -535,49 +533,53 @@ elif st.session_state.page == 'result':
                 st.write("Standard conditions.")
     
 # --- FINAL SECTION: DETAILS & WEATHER SIDE-BY-SIDE ---
-## --- FINAL SECTION: CARDS UI (FIXED) ---
+# --- FINAL SECTION: CARDS UI ---
     st.markdown("<br>", unsafe_allow_html=True) # Spacer
     
-    c_details, c_weather = st.columns(2)
-    
-    # --- LEFT CARD: FLIGHT DETAILS ---
-    with c_details:
-        if HAS_PANDAS:
-            # Prepare data variables
-            dep_time_str = f"{int(flight['dep_time']):04d}"
-            formatted_dep_time = f"{dep_time_str[:2]}:{dep_time_str[2:]}"
-            origin_name = data['Origin'].classes_[int(float(flight['origin']))]
-            dest_name = data['Origin'].classes_[int(float(flight['dest']))]
-            distance_val = f"{int(float(flight['distance']))}"
-            
-            # BUILD THE WHOLE CARD AS ONE STRING
-            flight_card_html = f"""
-            <div class="stCard">
-                <h3>✈️ Flight Details</h3>
-                <table class="details-table" style="width:100%">
-                    <tr><td class="details-label">Flight No</td><td class="details-value">{flight['flight_num']}</td></tr>
-                    <tr><td class="details-label">Route</td><td class="details-value">{origin_name} ➝ {dest_name}</td></tr>
-                    <tr><td class="details-label">Distance</td><td class="details-value">{distance_val} mi</td></tr>
-                    <tr><td class="details-label">Departs</td><td class="details-value">{formatted_dep_time}</td></tr>
-                    <tr><td class="details-label">Date</td><td class="details-value">{flight['date']}</td></tr>
-                </table>
-            </div>
-            """
-            st.markdown(flight_card_html, unsafe_allow_html=True)
-
-    # --- RIGHT CARD: WEATHER REPORT ---
-    with c_weather:
-        # Prepare data variables
+    # 1. PREPARE DATA (Do this before columns so both cards can use it)
+    if HAS_PANDAS:
+        # Decode Airport Names
+        origin_name = data['Origin'].classes_[int(float(flight['origin']))]
+        dest_name = data['Origin'].classes_[int(float(flight['dest']))]
+        
+        # Format Times & Distances
+        dep_time_str = f"{int(flight['dep_time']):04d}"
+        formatted_dep_time = f"{dep_time_str[:2]}:{dep_time_str[2:]}"
+        distance_val = f"{int(float(flight['distance']))}"
+        
+        # Format Weather Values
         temp_f = (weather['tavg'] * 9/5) + 32
         prcp_in = weather['prcp'] * 0.03937
         snow_in = weather['snow'] * 0.03937
         wspd_mph = weather['wspd'] * 0.621371
         pres_in = weather['pres'] * 0.02953
-        
-        # BUILD THE WHOLE CARD AS ONE STRING
+
+    # 2. CREATE COLUMNS
+    c_details, c_weather = st.columns(2)
+    
+    # --- LEFT CARD: FLIGHT DETAILS ---
+    with c_details:
+        # BUILD THE FLIGHT CARD HTML
+        flight_card_html = f"""
+        <div class="stCard">
+            <h3>✈️ Flight Details</h3>
+            <table class="details-table" style="width:100%">
+                <tr><td class="details-label">Flight No</td><td class="details-value">{flight['flight_num']}</td></tr>
+                <tr><td class="details-label">Route</td><td class="details-value">{origin_name} ➝ {dest_name}</td></tr>
+                <tr><td class="details-label">Distance</td><td class="details-value">{distance_val} mi</td></tr>
+                <tr><td class="details-label">Departs</td><td class="details-value">{formatted_dep_time}</td></tr>
+                <tr><td class="details-label">Date</td><td class="details-value">{flight['date']}</td></tr>
+            </table>
+        </div>
+        """
+        st.markdown(flight_card_html, unsafe_allow_html=True)
+
+    # --- RIGHT CARD: WEATHER REPORT ---
+    with c_weather:
+        # BUILD THE WEATHER CARD HTML (Now uses {origin_name} dynamically)
         weather_card_html = f"""
         <div class="stCard" style="border-top: 5px solid #FFB612;">
-            <h3>☁️ Weather Report</h3>
+            <h3>☁️ Weather at {origin_name}</h3>
             <table class="details-table" style="width:100%">
                 <tr><td class="details-label">Temp</td><td class="details-value">{temp_f:.0f} °F</td></tr>
                 <tr><td class="details-label">Wind</td><td class="details-value">{wspd_mph:.1f} mph</td></tr>

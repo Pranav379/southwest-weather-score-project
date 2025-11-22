@@ -439,7 +439,7 @@ elif st.session_state.page == 'result':
         with st.expander("📈 Factors INCREASING Risk", expanded=True):
             risks = []
             
-            # LOGIC remains in Metric (to match data), DISPLAY converts to Imperial
+            # LOGIC remains in Metric, DISPLAY converts to Imperial
             if weather['wspd'] > 25:
                 wspd_mph = weather['wspd'] * 0.621371
                 risks.append(f"• High Winds ({wspd_mph:.1f} mph)")
@@ -462,17 +462,19 @@ elif st.session_state.page == 'result':
                 risks.append("• Late Evening Departure")
             
             if risks:
-                st.markdown("\n".join(risks))
+                # Use double newlines to force separate lines
+                st.markdown("\n\n".join(risks))
             else:
                 st.write("No major risk factors.")
     
     with col_dec:
         with st.expander("📉 Factors DECREASING Risk", expanded=True):
             goods = []
-            # Logic check remains in Celsius (15-30C is roughly 59-86F)
+            # Logic check remains in Celsius
             if 15 < weather['tavg'] < 30:
-                # Convert to Fahrenheit for display
+                # Convert to Fahrenheit
                 temp_f = (weather['tavg'] * 9/5) + 32
+                # Display as whole number
                 goods.append(f"• Mild Temps ({temp_f:.0f}°F)")
             
             if weather['wspd'] < 15:
@@ -483,7 +485,8 @@ elif st.session_state.page == 'result':
                 goods.append("• No Precipitation")
             
             if goods:
-                st.markdown("\n".join(goods))
+                # Use double newlines to force separate lines
+                st.markdown("\n\n".join(goods))
             else:
                 st.write("Standard conditions.")
     

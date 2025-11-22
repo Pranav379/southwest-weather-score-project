@@ -4,7 +4,7 @@ import os
 import pickle
 
 # configure encoders
-with open('label_encoders.pkl', 'rb') as file:
+with open('./Dashboard/label_encoders.pkl', 'rb') as file:
     data = pickle.load(file)
 
 

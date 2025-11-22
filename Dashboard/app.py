@@ -52,6 +52,11 @@ def load_data(file_path):
         return None
 
 TEST_DATA_DF = load_data(CSV_FILE_PATH)
+# ==========================================
+# FILTER: Only keep flights with Risk > 0
+# ==========================================
+if TEST_DATA_DF is not None and 'weatherScore' in TEST_DATA_DF.columns:
+    TEST_DATA_DF = TEST_DATA_DF[TEST_DATA_DF['weatherScore'] > 0]
 
 # ==========================================
 # 3. SOUTHWEST STYLING (CSS) - LEGIBILITY IMPROVED (DARK MODE ELEMENTS)
@@ -236,6 +241,10 @@ if st.session_state.page == 'landing':
         if flight_num not in flight_numbers:
             flight_numbers.append(flight_num)
     
+    # --- LIMIT TO 10 ITEMS ---
+        if len(flight_numbers) >= 10:
+            break
+    
     selected_flight_num = st.selectbox(
         "📊 Select a flight number:",
         options=flight_numbers,
@@ -245,54 +254,40 @@ if st.session_state.page == 'landing':
 # Step 2: Get all routes for this flight number
     matching_rows = []
     for index, row in TEST_DATA_DF.iterrows():
-        # Handle flight number matching (same as before)
-        flight_num = row.get('Flight_Number_Reporting_Airline', 'N/A')
-        if flight_num != 'N/A':
+        # 1. Identify Flight Number
+        row_flight_num = row.get('Flight_Number_Reporting_Airline', 'N/A')
+        if row_flight_num != 'N/A':
             try:
-                flight_num = f"WN{int(float(flight_num))}"
+                # Normalize flight number to match selection (e.g. 2606.0 -> WN2606)
+                f_str = f"WN{int(float(row_flight_num))}"
             except:
-                flight_num = f"WN{flight_num}"
+                f_str = f"WN{row_flight_num}"
         
-        if flight_num == selected_flight_num:
-            # --- START OF FIX ---
+        # 2. If this row matches the selected flight...
+        if f_str == selected_flight_num:
+            raw_origin = row.get('Origin', 'N/A')
+            raw_dest = row.get('Dest', 'N/A')
+            
+            # 3. Try to decode names, but have a fallback!
             try:
-                raw_origin = row.get('Origin', 'N/A')
-                raw_dest = row.get('Dest', 'N/A')
+                # Attempt to look up the real names (e.g., "DAL", "HOU")
+                origin_idx = int(float(raw_origin))
+                dest_idx = int(float(raw_dest))
                 
-                # Logic: 
-                # 1. Try to treat it as a number (e.g. 8.0) and decode it.
-                # 2. If that fails (ValueError), it might already be a name (e.g. "LBB").
-                # 3. If decoding fails (IndexError), SKIP it.
+                origin_name = data['Origin'].classes_[origin_idx]
+                dest_name = data['Origin'].classes_[dest_idx]
                 
-                try:
-                    # Attempt to convert to int index and decode
-                    origin_idx = int(float(raw_origin))
-                    dest_idx = int(float(raw_dest))
-                    
-                    origin_name = data['Origin'].classes_[origin_idx]
-                    dest_name = data['Origin'].classes_[dest_idx]
-                except ValueError:
-                    # It wasn't a number, so assume it's already a text name (e.g. "LBB")
-                    origin_name = str(raw_origin)
-                    dest_name = str(raw_dest)
-                
-                # Final sanity check: If the result is still just a number string, skip it
-                # (This filters out cases where decode failed and left us with "3.0")
-                if origin_name.replace('.', '', 1).isdigit():
-                    continue 
-
                 route_label = f"{origin_name} → {dest_name}"
                 
-                matching_rows.append({
-                    'label': route_label,
-                    'index': index
-                })
-
             except Exception:
-                # If anything goes wrong, SKIP this row entirely. 
-                # Do not show raw numbers.
-                continue
-            # --- END OF FIX ---
+                # --- THE FIX: Don't skip! Use raw values if lookup fails ---
+                # This ensures the dropdown is NEVER empty if data exists
+                route_label = f"Loc {raw_origin} → Loc {raw_dest}"
+
+            matching_rows.append({
+                'label': route_label,
+                'index': index
+            })
     
     # Remove duplicates but keep index
     unique_routes = []
@@ -314,7 +309,7 @@ if st.session_state.page == 'landing':
         # Find the index for this route
         selected_route_obj = next(r for r in unique_routes if r['label'] == selected_route)
         selected_index = selected_route_obj['index']
-        selected_row = TEST_DATA_DF.iloc[selected_index]
+        selected_row = TEST_DATA_DF.loc[selected_index]
         
         # Format the data
         flight_num = str(selected_row.get('Flight_Number_Reporting_Airline', 'N/A'))
@@ -323,12 +318,27 @@ if st.session_state.page == 'landing':
                 flight_num = f"WN{int(float(flight_num))}"
             except:
                 flight_num = f"WN{flight_num}"
-        
+
+        # --- NEW DATE FORMATTING LOGIC ---
+        try:
+            # 1. Try to grab Month, Day, and Year
+            # Use .get() to be safe. Default Year to 2024 if missing.
+            mm = int(float(selected_row.get('Month', 0)))
+            dd = int(float(selected_row.get('DayofMonth', 0)))
+            yy = int(float(selected_row.get('Year', 2024)))
+            
+            # 2. Convert to "September 10, 2024" format
+            date_str = datetime.date(yy, mm, dd).strftime("%B %d, %Y")
+        except Exception:
+            # Fallback: If 'Month' is missing, stick to the old Quarter format
+            date_str = f"Q{selected_row.get('Quarter', 'N/A')} Day {selected_row.get('DayofMonth', 'N/A')}"   
+        # -----------------------------------
+
         flight_data = {
             "id": selected_index,
             "source": "CSV",
             "flight_num": flight_num,
-            "date": f"Q{selected_row.get('Quarter', 'N/A')} Day {selected_row.get('DayofMonth', 'N/A')}",
+            "date": date_str,  # <--- Uses the new formatted string
             "origin": str(selected_row.get('Origin', 'N/A')),
             "dest": str(selected_row.get('Dest', 'N/A')),
             "distance": float(selected_row.get('Distance', 0)),
@@ -447,8 +457,12 @@ elif st.session_state.page == 'result':
     with col_dec:
         with st.expander("📉 Factors DECREASING Risk", expanded=True):
             goods = []
+            # Logic check remains in Celsius (15-30C is roughly 59-86F)
             if 15 < weather['tavg'] < 30:
-                goods.append(f"• Mild Temps ({weather['tavg']:.1f}°C)")
+                # Convert to Fahrenheit for display
+                temp_f = (weather['tavg'] * 9/5) + 32
+                goods.append(f"• Mild Temps ({temp_f:.1f}°F)")
+            
             if weather['wspd'] < 15:
                 goods.append("• Calm Winds")
             if weather['pres'] >= 1015:
@@ -465,28 +479,84 @@ elif st.session_state.page == 'result':
     st.markdown("---")
     with st.expander("✈️ Flight Details", expanded=False):
         if HAS_PANDAS:
+            # 1. Prepare the data variables
             dep_time_str = f"{int(flight['dep_time']):04d}"
             formatted_dep_time = f"{dep_time_str[:2]}:{dep_time_str[2:]}"
-            details_data = {
-                'Property': ['Flight Number', 'Origin', 'Destination', 'Distance (miles)', 'Departure Time', 'Date', 'Record Index'],
-                'Value': [
-                    flight['flight_num'],
-                    data['Origin'].classes_[int(float(flight['origin']))],  # Changed here
-                    data['Origin'].classes_[int(float(flight['dest']))],    # Change this too just in case
-                    f"{int(float(flight['distance']))}",                    # And likely here
-                    formatted_dep_time,
-                    flight['date'],
-                    flight['id']
-                ]
-            }
-            st.dataframe(pd.DataFrame(details_data), use_container_width=True, hide_index=True)
+            
+            origin_name = data['Origin'].classes_[int(float(flight['origin']))]
+            dest_name = data['Origin'].classes_[int(float(flight['dest']))]
+            distance_val = f"{int(float(flight['distance']))}"
+            
+            # 2. Create a custom HTML table (No headers, just data)
+            table_html = f"""
+            <style>
+                .details-table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                }}
+                .details-table td {{
+                    padding: 10px 5px;
+                    border-bottom: 1px solid #e0e0e0;
+                    font-size: 0.95rem;
+                }}
+                .details-label {{
+                    font-weight: 700;
+                    color: #304CB2; /* Southwest Blue */
+                    width: 40%;
+                }}
+                .details-value {{
+                    color: #333333;
+                    text-align: right;
+                }}
+            </style>
+            
+            <table class="details-table">
+                <tr><td class="details-label">Flight Number</td><td class="details-value">{flight['flight_num']}</td></tr>
+                <tr><td class="details-label">Origin</td><td class="details-value">{origin_name}</td></tr>
+                <tr><td class="details-label">Destination</td><td class="details-value">{dest_name}</td></tr>
+                <tr><td class="details-label">Distance</td><td class="details-value">{distance_val} miles</td></tr>
+                <tr><td class="details-label">Departure Time</td><td class="details-value">{formatted_dep_time}</td></tr>
+                <tr><td class="details-label">Date</td><td class="details-value">{flight['date']}</td></tr>
+            </table>
+            """
+            
+            st.markdown(table_html, unsafe_allow_html=True)
     
-    # Debug section
-    if st.checkbox("View Raw Weather Data (Debug)"):
-        if HAS_PANDAS:
-            debug_data = {
-                'Feature': ['Temperature (°C)', 'Precipitation (mm)', 'Snow (mm)', 'Wind Speed (km/h)', 'Pressure (hPa)'],
-                'Value': [f"{weather['tavg']:.1f}", f"{weather['prcp']:.1f}", f"{weather['snow']:.1f}", f"{weather['wspd']:.1f}", f"{weather['pres']:.1f}"]
-            }
-            st.dataframe(pd.DataFrame(debug_data), use_container_width=True)
-    
+# Debug section
+    if st.checkbox("View Raw Weather Data"):
+        # Convert Temp to Fahrenheit
+        temp_f = (weather['tavg'] * 9/5) + 32
+        
+        # HTML Table implementation
+        weather_html = f"""
+        <style>
+            .debug-table {{
+                width: 100%;
+                border-collapse: collapse;
+            }}
+            .debug-table td {{
+                padding: 10px 5px;
+                border-bottom: 1px solid #e0e0e0;
+                font-size: 0.95rem;
+            }}
+            .debug-label {{
+                font-weight: 700;
+                color: #304CB2; /* Southwest Blue */
+                width: 50%;
+            }}
+            .debug-value {{
+                color: #333333;
+                text-align: right;
+                font-family: monospace;
+            }}
+        </style>
+        
+        <table class="debug-table">
+            <tr><td class="debug-label">Temperature</td><td class="debug-value">{temp_f:.1f} °F</td></tr>
+            <tr><td class="debug-label">Precipitation</td><td class="debug-value">{weather['prcp']:.1f} mm</td></tr>
+            <tr><td class="debug-label">Snow</td><td class="debug-value">{weather['snow']:.1f} mm</td></tr>
+            <tr><td class="debug-label">Wind Speed</td><td class="debug-value">{weather['wspd']:.1f} km/h</td></tr>
+            <tr><td class="debug-label">Pressure</td><td class="debug-value">{weather['pres']:.1f} hPa</td></tr>
+        </table>
+        """
+        st.markdown(weather_html, unsafe_allow_html=True)

@@ -707,7 +707,7 @@ except ImportError:
 # 2. DATA LOADING
 # ==========================================
 script_dir = os.path.dirname(os.path.abspath(__file__))
-CSV_FILE_PATH = os.path.join(script_dir, 'Dashboard', 'flight_data.csv.gz')
+CSV_FILE_PATH = os.path.join(script_dir, 'flight_data.csv.gz')
 TARGET_YEARS = [2015, 2016, 2017, 2018, 2019, 2023, 2024]
 
 @st.cache_data

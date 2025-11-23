@@ -683,6 +683,15 @@ import os
 import pickle
 import airportsdata
 
+# ==========================================
+# 1. APP CONFIGURATION & SAFE IMPORTS
+# ==========================================
+st.set_page_config(
+    page_title="Flight Delay Predictor ✈️",
+    page_icon="✈️",
+    layout="centered"
+)
+
 # configure encoders
 # Note: This assumes './Dashboard/label_encoders.pkl' exists relative to where the app is run.
 try:
@@ -694,16 +703,6 @@ except FileNotFoundError:
 except Exception as e:
     st.error(f"Error loading label encoders: {e}")
     data = None
-
-
-# ==========================================
-# 1. APP CONFIGURATION & SAFE IMPORTS
-# ==========================================
-st.set_page_config(
-    page_title="Flight Delay Predictor ✈️",
-    page_icon="✈️",
-    layout="centered"
-)
 
 # Safe Imports
 try:

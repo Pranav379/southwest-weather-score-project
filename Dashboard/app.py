@@ -734,44 +734,55 @@ def load_data(file_path):
         return None
     
     try:
+        # IMPORTANT: gzip added
         chunks = pd.read_csv(
             file_path,
-            chunksize=10_000,   # safe chunk size
+            chunksize=10_000,
+            compression="gzip"
         )
     
         for chunk in chunks:
             chunk.columns = chunk.columns.str.strip()
     
-            # Loop through chunk rows by year
             for year in chunk["Year"].unique():
-                # 2024 case
+    
                 if year == 2024 and len(collected[2024]) < TARGET_REQUIREMENTS[2024]:
                     slice_yr = chunk[chunk["Year"] == 2024]
-                    take_n = min(TARGET_REQUIREMENTS[2024] - len(collected[2024]), len(slice_yr))
+                    take_n = min(
+                        TARGET_REQUIREMENTS[2024] - len(collected[2024]),
+                        len(slice_yr)
+                    )
                     if take_n > 0:
                         collected[2024].append(
                             slice_yr.sample(take_n, replace=False, random_state=42)
                         )
     
-                # 2023 case
                 elif year == 2023 and len(collected[2023]) < TARGET_REQUIREMENTS[2023]:
                     slice_yr = chunk[chunk["Year"] == 2023]
-                    take_n = min(TARGET_REQUIREMENTS[2023] - len(collected[2023]), len(slice_yr))
+                    take_n = min(
+                        TARGET_REQUIREMENTS[2023] - len(collected[2023]),
+                        len(slice_yr)
+                    )
                     if take_n > 0:
                         collected[2023].append(
                             slice_yr.sample(take_n, replace=False, random_state=42)
                         )
     
-                # 2015-2019 combined bucket
-                elif year in YEAR_GROUP_2015_2019 and len(collected["2015_2019"]) < TARGET_REQUIREMENTS["2015_2019"]:
+                elif (
+                    year in YEAR_GROUP_2015_2019 
+                    and len(collected["2015_2019"]) < TARGET_REQUIREMENTS["2015_2019"]
+                ):
                     slice_yr = chunk[chunk["Year"] == year]
-                    take_n = min(TARGET_REQUIREMENTS["2015_2019"] - len(collected["2015_2019"]), len(slice_yr))
+                    take_n = min(
+                        TARGET_REQUIREMENTS["2015_2019"] - len(collected["2015_2019"]),
+                        len(slice_yr)
+                    )
                     if take_n > 0:
                         collected["2015_2019"].append(
                             slice_yr.sample(take_n, replace=False, random_state=42)
                         )
     
-            # Stop early if ALL requirements met
+            # Stop early if all buckets are filled
             if (
                 len(collected[2024]) >= TARGET_REQUIREMENTS[2024]
                 and len(collected[2023]) >= TARGET_REQUIREMENTS[2023]
@@ -779,18 +790,17 @@ def load_data(file_path):
             ):
                 break
     
-        # Combine final data
+        # Merge collected data
         frames = []
         for key in collected:
             if collected[key]:
                 frames.append(pd.concat(collected[key]))
     
-        if frames:
-            df = pd.concat(frames, ignore_index=True)
-        else:
-            st.error("No data could be collected from file.")
+        if not frames:
+            st.error("No data could be collected.")
             return None
     
+        df = pd.concat(frames, ignore_index=True)
         return df
     
     except Exception as e:

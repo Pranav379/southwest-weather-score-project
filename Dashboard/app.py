@@ -687,28 +687,26 @@ import os
 import pickle
 import airportsdata
 
-# configure encoders
-# Note: This assumes './Dashboard/label_encoders.pkl' exists relative to where the app is run.
+# ==========================================
+# 1. CONFIGURE ENCODERS
+# ==========================================
 try:
     with open('./Dashboard/label_encoders.pkl', 'rb') as file:
         data = pickle.load(file)
 except FileNotFoundError:
     st.error("Error: label_encoders.pkl not found. Please ensure the file is in the correct path.")
-    data = None  # Set data to None if file not found
+    data = None
 except Exception as e:
     st.error(f"Error loading label encoders: {e}")
     data = None
 
 # ==========================================
-# 1. APP CONFIGURATION & SAFE IMPORTS
+# 2. APP CONFIGURATION & SAFE IMPORTS
 # ==========================================
-st.set_page_config(
-    page_title="Flight Delay Predictor ✈️",
-    page_icon="✈️",
-    layout="centered"
-)
+st.set_page_config(page_title="Flight Delay Predictor ✈️",
+                   page_icon="✈️",
+                   layout="centered")
 
-# Safe Imports
 try:
     import plotly.graph_objects as go
     import pandas as pd
@@ -719,12 +717,9 @@ except ImportError:
     HAS_PANDAS = False
     st.error("Pandas or Plotly library is missing. Install them to run the app.")
 
-# small helper to coerce NaNs to 0
 def safe_float(value):
-    """Return numeric float, or 0 if value is NaN / missing / non-convertible."""
     try:
         v = float(value)
-        # pandas may not be available at this definition time, but if it is:
         if 'pd' in globals() and pd.isna(v):
             return 0.0
         return v
@@ -732,19 +727,16 @@ def safe_float(value):
         return 0.0
 
 # ==========================================
-# 2. DATA LOADING
+# 3. DATA LOADING
 # ==========================================
-# Set the CSV file path - assumes it's in the same directory as app.py
 script_dir = os.path.dirname(os.path.abspath(__file__))
 CSV_FILE_PATH = os.path.join(script_dir, 'flight_data.csv.gz')
 
 @st.cache_data
 def load_data(file_path):
-    """Safely loads the CSV data if available - only first 5000 rows for speed."""
     if not HAS_PANDAS:
         return None
     try:
-        # Load only first 5000 rows to speed up loading
         df = pd.read_csv(file_path, nrows=5000, compression='gzip')
         df.columns = df.columns.str.strip()
         return df
@@ -756,15 +748,13 @@ def load_data(file_path):
 
 TEST_DATA_DF = load_data(CSV_FILE_PATH)
 
-# ==========================================
-# FILTER: Only keep flights with Risk > 0
-# ==========================================
 if TEST_DATA_DF is not None and 'weatherScore' in TEST_DATA_DF.columns:
-    # Keep only > 0 as before
     TEST_DATA_DF = TEST_DATA_DF[TEST_DATA_DF['weatherScore'] > 0]
 
-
-EXTRA_FLIGHTS = set()
+# ==========================================
+# 4. EXTRA_FLIGHTS LOGIC (14 flights total)
+# ==========================================
+EXTRA_FLIGHTS = []
 
 def _format_fn(raw):
     try:
@@ -772,20 +762,30 @@ def _format_fn(raw):
     except:
         return f"WN{raw}"
 
-score_ranges = [
-    ((0, 10), 4),
+score_ranges_counts = [
+    ((0, 10), 6),
     ((10, 30), 2),
     ((30, 60), 2),
     ((60, 80), 2),
     ((80, float('inf')), 2)
 ]
 
-for (low, high), count in score_ranges:
-    subset = TEST_DATA_DF[(TEST_DATA_DF['weatherScore'] > low) & (TEST_DATA_DF['weatherScore'] <= high)]
-    for _, row in subset.head(count).iterrows():
+for (low, high), count in score_ranges_counts:
+    subset = TEST_DATA_DF[
+        (TEST_DATA_DF['weatherScore'] > low) &
+        (TEST_DATA_DF['weatherScore'] <= high)
+    ]
+    added = 0
+    for _, row in subset.iterrows():
+        if added >= count:
+            break
         fn = row.get('Flight_Number_Reporting_Airline')
         if fn is not None:
-            EXTRA_FLIGHTS.add(_format_fn(fn))
+            fn_formatted = _format_fn(fn)
+            if fn_formatted not in EXTRA_FLIGHTS:
+                EXTRA_FLIGHTS.append(fn_formatted)
+                added += 1
+
             
 # ==========================================
 # 3. SOUTHWEST STYLING (CSS) - THEME UPGRADE
@@ -927,120 +927,49 @@ summary div {
 st.markdown(NUKE_EXPANDER_CSS, unsafe_allow_html=True)
 
 # ==========================================
-# 4. LOGIC & HEURISTIC ENGINE
+# 6. RISK CALCULATION
 # ==========================================
 def calculate_risk_score(weather, flight_data):
-    """Calculates the 'Weather Delay Risk' Score (0-100)."""
     risk = 0.0
-
-    if weather['wspd'] > 40:
-        risk += 30
-    elif weather['wspd'] > 25:
-        risk += 15
-
-    if weather['prcp'] > 15:
-        risk += 35
-    elif weather['prcp'] > 0:
-        risk += 10
-
-    if weather['snow'] > 0:
-        risk += 40
-
-    if weather['pres'] < 1005:
-        risk += 15
-
-    if flight_data['dep_time'] > 1800:
-        risk += 5
-
-    if flight_data['distance'] > 2000:
-        risk += 5
-
+    if weather['wspd'] > 40: risk += 30
+    elif weather['wspd'] > 25: risk += 15
+    if weather['prcp'] > 15: risk += 35
+    elif weather['prcp'] > 0: risk += 10
+    if weather['snow'] > 0: risk += 40
+    if weather['pres'] < 1005: risk += 15
+    if flight_data['dep_time'] > 1800: risk += 5
+    if flight_data['distance'] > 2000: risk += 5
     return max(0.0, min(100.0, risk))
 
 # ==========================================
-# 5. USER INTERFACE FLOW
+# 7. USER INTERFACE FLOW
 # ==========================================
-if 'page' not in st.session_state:
-    st.session_state.page = 'landing'
-if 'selected_flight' not in st.session_state:
-    st.session_state.selected_flight = None
+if 'page' not in st.session_state: st.session_state.page = 'landing'
+if 'selected_flight' not in st.session_state: st.session_state.selected_flight = None
 
-# --- LOGO & TITLE SECTION ---
+# --- LOGO & TITLE ---
 col_logo, col_text = st.columns([2, 3])
 with col_logo:
-    # Use st.image for better size control in a column
     st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Southwest_Airlines_logo_2014.svg/320px-Southwest_Airlines_logo_2014.svg.png", width=500)
-
 st.markdown('<div class="sw-stripe"></div>', unsafe_allow_html=True)
-
-# UPDATED: Added Plane Emoji ✈️
 st.title("Flight Delay Predictor ✈️")
 
-# Check if data is available before proceeding
 if TEST_DATA_DF is None:
     st.error("❌ CSV file not found!")
     st.info(f"Looking for: {CSV_FILE_PATH}")
     st.stop()
 if data is None:
-    st.stop()  # already handled error above
+    st.stop()
 
 # --- PAGE 1: LANDING ---
 if st.session_state.page == 'landing':
 
-    # FIX: Load airport data once for better dropdown display
     airports = airportsdata.load('IATA')
+    st.markdown("""<div style='text-align: left; color: #000000; font-size: 20px; font-family: Helvetica, Arial, sans-serif; font-weight: 800; margin-bottom: 50px;'>Enter your flight number to get started!</div>""", unsafe_allow_html=True)
 
-    # UPDATED: Changed <h2> to <div> to bypass global Blue styling
-    st.markdown("""
-        <div style='
-            text-align: left; 
-            color: #000000; 
-            font-size: 20px; 
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            font-weight: 800; 
-            margin-bottom: 50px; 
-        '>
-            Enter your flight number to get started!
-        </div>
-    """, unsafe_allow_html=True)
-
-
-    # Step 1: Get unique flight numbers
-    flight_numbers = []
-    # Blocklist of flight numbers to always exclude
+    # Step 1: Build dropdown of 14 flights from EXTRA_FLIGHTS
     BLOCKED = {"WN1582", "WN28", "WN2606", "WN448", "WN471", "WN1065"}
-
-    # we'll ensure EXTRA_FLIGHTS are included even if iteration stops early
-    included_extras = set()
-
-    for index, row in TEST_DATA_DF.iterrows():
-        flight_num = row.get('Flight_Number_Reporting_Airline', 'N/A')
-        if flight_num != 'N/A':
-            try:
-                flight_num = f"WN{int(float(flight_num))}"
-            except:
-                flight_num = f"WN{flight_num}"
-
-        # skip blocked flights
-        if flight_num in BLOCKED:
-            continue
-
-        # If this is one of our extra sample flights, mark it
-        if flight_num in EXTRA_FLIGHTS:
-            included_extras.add(flight_num)
-
-        if flight_num not in flight_numbers:
-            flight_numbers.append(flight_num)
-
-        # --- LIMIT TO 12 ITEMS ---
-        if len(flight_numbers) >= 12:
-            break
-
-    # ensure the EXTRA_FLIGHTS are present in the dropdown
-    for extra in EXTRA_FLIGHTS:
-        if extra not in flight_numbers and extra not in BLOCKED:
-            # prepend extras so they're visible at top
-            flight_numbers.insert(0, extra)
+    flight_numbers = [f for f in EXTRA_FLIGHTS if f not in BLOCKED]
 
     selected_flight_num = st.selectbox(
         "📊 Select a flight number:",
@@ -1048,53 +977,30 @@ if st.session_state.page == 'landing':
         key="flight_select"
     )
 
-# Step 2: Get all routes for this flight number
+    # Step 2: Get matching routes
     matching_rows = []
     for index, row in TEST_DATA_DF.iterrows():
-        # 1. Identify Flight Number
         row_flight_num = row.get('Flight_Number_Reporting_Airline', 'N/A')
         if row_flight_num != 'N/A':
-            try:
-                # Normalize flight number to match selection (e.g. 2606.0 -> WN2606)
-                f_str = f"WN{int(float(row_flight_num))}"
-            except:
-                f_str = f"WN{row_flight_num}"
-
-        # 2. If this row matches the selected flight...
+            try: f_str = f"WN{int(float(row_flight_num))}"
+            except: f_str = f"WN{row_flight_num}"
         if f_str == selected_flight_num:
             raw_origin = row.get('Origin', 'N/A')
             raw_dest = row.get('Dest', 'N/A')
-
-            # 3. FIX: Try to decode names with full airport details
             try:
-                # Get IATA codes using the label encoder
                 origin_idx = int(float(raw_origin))
                 dest_idx = int(float(raw_dest))
-
                 origin_iata = data['Origin'].classes_[origin_idx]
                 dest_iata = data['Origin'].classes_[dest_idx]
-
-                # Get full airport info
                 originInfo = airports.get(origin_iata)
                 destInfo = airports.get(dest_iata)
-
-                # Build the user-friendly label
                 origin_display = f"{originInfo.get('name', origin_iata)} ({origin_iata})" if originInfo else origin_iata
                 dest_display = f"{destInfo.get('name', dest_iata)} ({dest_iata})" if destInfo else dest_iata
-
                 route_label = f"{origin_display} → {dest_display}"
-
             except Exception:
-                # Fallback if label encoding or IATA lookup fails
-                # --- The FIX: Don't skip! Use raw values if lookup fails ---
                 route_label = f"{raw_origin} → {raw_dest}"
+            matching_rows.append({'label': route_label, 'index': index})
 
-            matching_rows.append({
-                'label': route_label,
-                'index': index
-            })
-
-    # Remove duplicates but keep index
     unique_routes = []
     seen = set()
     for item in matching_rows:
@@ -1111,39 +1017,28 @@ if st.session_state.page == 'landing':
     )
 
     if st.button("Analyze", key="analyze_btn", use_container_width=True):
-        # Find the index for this route
         selected_route_obj = next(r for r in unique_routes if r['label'] == selected_route)
         selected_index = selected_route_obj['index']
         selected_row = TEST_DATA_DF.loc[selected_index]
 
-        # Format the data
         flight_num = str(selected_row.get('Flight_Number_Reporting_Airline', 'N/A'))
         if flight_num != 'N/A':
-            try:
-                flight_num = f"WN{int(float(flight_num))}"
-            except:
-                flight_num = f"WN{flight_num}"
+            try: flight_num = f"WN{int(float(flight_num))}"
+            except: flight_num = f"WN{flight_num}"
 
-        # --- NEW DATE FORMATTING LOGIC ---
         try:
-            # 1. Try to grab Month, Day, and Year
-            # Use .get() to be safe. Default Year to 2024 if missing.
             mm = int(float(selected_row.get('Month', 0)))
             dd = int(float(selected_row.get('DayofMonth', 0)))
             yy = int(float(selected_row.get('Year', 2024)))
-
-            # 2. Convert to "September 10, 2024" format
             date_str = datetime.date(yy, mm, dd).strftime("%B %d, %Y")
         except Exception:
-            # Fallback: If 'Month' is missing, stick to the old Quarter format
             date_str = f"Q{selected_row.get('Quarter', 'N/A')} Day {selected_row.get('DayofMonth', 'N/A')}"
-        # -----------------------------------
 
         flight_data = {
             "id": selected_index,
             "source": "CSV",
             "flight_num": flight_num,
-            "date": date_str,  # <--- Uses the new formatted string
+            "date": date_str,
             "origin": str(selected_row.get('Origin', 'N/A')),
             "dest": str(selected_row.get('Dest', 'N/A')),
             "distance": safe_float(selected_row.get('Distance', 0)),
@@ -1157,6 +1052,7 @@ if st.session_state.page == 'landing':
             },
             "true_weather_score": float(selected_row.get('weatherScore', 0))
         }
+
         st.session_state.selected_flight = flight_data
         st.session_state.page = 'result'
         st.rerun()

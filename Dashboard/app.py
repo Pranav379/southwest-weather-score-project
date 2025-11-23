@@ -982,7 +982,7 @@ if st.session_state.page == 'landing':
 
     selected_flight_num = st.selectbox("📊 Select a flight number:", options=flight_options)
     selected_flight = next(
-    f for f in EXTRA_FLIGHTS if f["flight"] == selected_flight_num
+    f for f in EXTRA_FLIGHTS if f == selected_flight_num
 )
 
     # Step 2: Get matching routes

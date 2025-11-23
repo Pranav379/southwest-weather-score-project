@@ -722,7 +722,7 @@ def load_data(file_path):
         chunks = pd.read_csv(
             file_path,
             compression="gzip",
-            chunksize=1_000,
+            chunksize=50,
         )
 
         sampled_frames = []

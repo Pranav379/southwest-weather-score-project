@@ -604,7 +604,7 @@ elif st.session_state.page == 'result':
         # BUILD THE WEATHER CARD HTML (Now uses {origin_name} dynamically)
         weather_card_html = f"""
         <div class="stCard" style="border-top: 5px solid #FFB612;">
-            <h3>☁️ Weather at {origin_name}</h3>
+            <h3>☁️ Weather at {originDisplay}</h3>
             <table class="details-table" style="width:100%">
                 <tr><td class="details-label">Temp</td><td class="details-value">{temp_f:.0f} °F</td></tr>
                 <tr><td class="details-label">Wind</td><td class="details-value">{f'0 mph' if wspd_mph == 0 else f'{wspd_mph:.1f} mph'}</td></tr>

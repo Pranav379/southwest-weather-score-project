@@ -5,6 +5,8 @@ Using 10 years of historical flight and meteorological data (2015–2025), this 
 
 ---
 
+Dashboard Link: [https://southwest-weather-score.streamlit.app/](url)
+
 ## 📍 Project Purpose
 
 Flight operations are highly sensitive to weather patterns. This project provides Southwest with:

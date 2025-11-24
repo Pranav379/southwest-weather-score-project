@@ -51,7 +51,7 @@ def load_data(file_path):
     if not HAS_PANDAS:
         return None
     try:
-        chunks = pd.read_csv(file_path, compression='gzip', chunksize=100000)
+        chunks = pd.read_csv(file_path, compression='gzip', chunksize=10000)
         df = pd.concat(chunk.sample(n=5000, random_state=42) for chunk in chunks if len(chunk) >= 5000)
         df.columns = df.columns.str.strip()
 

@@ -726,7 +726,7 @@ elif st.session_state.page == 'result':
             <table class="details-table" style="width:100%">
                 <tr><td class="details-label">Temp</td><td class="details-value">{temp_f:.0f} °F</td></tr>
                 <tr><td class="details-label">Wind</td><td class="details-value">{f'0 mph' if wspd_mph == 0 else f'{wspd_mph:.1f} mph'}</td></tr>
-                <tr><td class="details-label">Precip</td><td class="details-value">{f'0 in' if prcp_in == 0 else f'{prcp_in:.1f} in'}</td></tr>
+                <tr><td class="details-label">Precip</td><td class="details-value">{f'0 in' if prcp_in <= 0.1 else f'{prcp_in:.1f} in'}</td></tr>
                 <tr><td class="details-label">Pressure</td><td class="details-value">{f'0 inHg' if pres_in == 0 else f'{pres_in:.1f} inHg'}</td></tr>
                 <tr><td class="details-label">Snow</td><td class="details-value">{f'0 in' if snow_in == 0 else f'{snow_in:.1f} in'}</td></tr>
             </table>

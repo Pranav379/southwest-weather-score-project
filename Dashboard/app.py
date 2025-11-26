@@ -756,17 +756,17 @@ elif page_selection == "Custom Weather Calculator":
                 format="%.1f", value=None, placeholder="e.g., 15"
             )
             input_prcp_in = st.number_input(
-                "Precipitation (inches)", min_value=0.0, step=0.01,
+                "Precipitation (inches)", min_value=0.0, step=0.1,
                 format="%.2f", value=None, placeholder="e.g., 0.2"
             )
             input_snow_in = st.number_input(
-                "Snow (inches)", min_value=0.0, step=0.01,
+                "Snow (inches)", min_value=0.0, step=0.1,
                 format="%.2f", value=None, placeholder="e.g., 0"
             )
 
         with col2:
             input_pres_inhg = st.number_input(
-                "Pressure (inHg)", min_value=29.5, max_value=32.5, step=0.01,
+                "Pressure (inHg)", min_value=29.5, max_value=32.5, step=0.1,
                 format="%.2f", value=None, placeholder="e.g., 30"
             )
             input_dep_time = st.number_input(

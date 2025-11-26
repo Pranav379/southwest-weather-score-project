@@ -111,13 +111,14 @@ elif data is None:
 # ==========================================
 SOUTHWEST_CSS = """
 <style>
-    /* 1. Main Background with Animated Gradient */
+    /* 1. Main Background with Enhanced Gradient & Side Decorations */
     [data-testid="stAppViewContainer"] {
         background: linear-gradient(-45deg, #e8f0f7, #f4f7f6, #e3f2fd, #f0f4f8);
         background-size: 400% 400%;
         animation: gradientShift 15s ease infinite;
         color: #333333 !important;
         position: relative;
+        overflow-x: hidden;
     }
     
     /* Animated floating clouds in background */
@@ -129,12 +130,46 @@ SOUTHWEST_CSS = """
         width: 100%;
         height: 100%;
         background-image: 
-            radial-gradient(ellipse 800px 300px at 20% 30%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
-            radial-gradient(ellipse 600px 250px at 80% 70%, rgba(255, 255, 255, 0.25) 0%, transparent 50%),
-            radial-gradient(ellipse 700px 280px at 50% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+            radial-gradient(ellipse 800px 300px at 20% 30%, rgba(255, 255, 255, 0.4) 0%, transparent 50%),
+            radial-gradient(ellipse 600px 250px at 80% 70%, rgba(255, 255, 255, 0.35) 0%, transparent 50%),
+            radial-gradient(ellipse 700px 280px at 50% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 50%);
         animation: cloudFloat 25s ease-in-out infinite;
         pointer-events: none;
         z-index: 0;
+    }
+    
+    /* Left side decorative accent - subtle blue glow */
+    [data-testid="stAppViewContainer"]::after {
+        content: "";
+        position: fixed;
+        left: -150px;
+        top: 0;
+        width: 300px;
+        height: 100%;
+        background: linear-gradient(90deg, 
+            rgba(48, 76, 178, 0.08) 0%, 
+            rgba(48, 76, 178, 0.04) 50%, 
+            transparent 100%);
+        pointer-events: none;
+        z-index: 0;
+        animation: pulseGlow 8s ease-in-out infinite;
+    }
+    
+    /* Right side decorative accent - subtle gold/yellow glow */
+    body::before {
+        content: "";
+        position: fixed;
+        right: -150px;
+        top: 0;
+        width: 300px;
+        height: 100%;
+        background: linear-gradient(270deg, 
+            rgba(255, 182, 18, 0.06) 0%, 
+            rgba(255, 182, 18, 0.03) 50%, 
+            transparent 100%);
+        pointer-events: none;
+        z-index: 0;
+        animation: pulseGlow 8s ease-in-out infinite reverse;
     }
     
     @keyframes gradientShift {
@@ -145,7 +180,12 @@ SOUTHWEST_CSS = """
     
     @keyframes cloudFloat {
         0%, 100% { transform: translateX(0) translateY(0); opacity: 0.5; }
-        50% { transform: translateX(-30px) translateY(-20px); opacity: 0.7; }
+        50% { transform: translateX(-30px) translateY(-20px); opacity: 0.8; }
+    }
+    
+    @keyframes pulseGlow {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
     }
     
     /* Ensure content appears above animated background */
@@ -154,129 +194,192 @@ SOUTHWEST_CSS = """
         z-index: 1;
     }
     
-    /* Flying airplane animation */
-    @keyframes flyAcross {
-        0% { transform: translateX(-100px) translateY(0) rotate(-5deg); opacity: 0; }
-        10% { opacity: 0.15; }
-        90% { opacity: 0.15; }
-        100% { transform: translateX(calc(100vw + 100px)) translateY(-50px) rotate(-5deg); opacity: 0; }
-    }
+    /* Left Side - Aviation/Weather Theme */
     
-    /* Add decorative airplane */
-    [data-testid="stAppViewContainer"]::after {
-        content: "✈️";
+    /* Cloud icon - top left */
+    [data-testid="stAppViewContainer"] .stApp::before {
+        content: "☁️";
         position: fixed;
-        font-size: 2rem;
-        top: 20%;
-        left: -100px;
-        animation: flyAcross 30s linear infinite;
+        left: 25px;
+        top: 10%;
+        font-size: 2.5rem;
+        opacity: 0.25;
         pointer-events: none;
         z-index: 0;
+        animation: gentleBob 7s ease-in-out infinite;
+    }
+    
+    /* Compass/Navigation circle - left side */
+    .sidebar .sidebar-content::before {
+        content: "";
+        position: fixed;
+        left: 20px;
+        top: 25%;
+        width: 70px;
+        height: 70px;
+        border: 3px solid rgba(48, 76, 178, 0.12);
+        border-radius: 50%;
+        border-top-color: rgba(48, 76, 178, 0.25);
+        animation: rotateCompass 8s linear infinite;
+        pointer-events: none;
+        z-index: 0;
+    }
+    
+    /* Wind indicator - left middle */
+    .sidebar .sidebar-content::after {
+        content: "🌬️";
+        position: fixed;
+        left: 30px;
+        top: 45%;
+        font-size: 2rem;
+        opacity: 0.2;
+        animation: windSway 4s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 0;
+    }
+    
+    /* Dotted flight path - left side */
+    [data-testid="stSidebar"]::before {
+        content: "⋯ ⋯ ⋯ ⋯ ⋯";
+        position: fixed;
+        left: 15px;
+        top: 60%;
+        font-size: 1.5rem;
+        color: rgba(48, 76, 178, 0.12);
+        writing-mode: vertical-rl;
+        letter-spacing: 15px;
+        pointer-events: none;
+        z-index: 0;
+        animation: fadeInOut 4s ease-in-out infinite;
+    }
+    
+    /* Thermometer - left bottom */
+    [data-testid="stSidebar"]::after {
+        content: "🌡️";
+        position: fixed;
+        left: 28px;
+        top: 75%;
+        font-size: 2rem;
+        opacity: 0.18;
+        pointer-events: none;
+        z-index: 0;
+        animation: tempPulse 3s ease-in-out infinite;
+    }
+    
+    /* Right Side - Aviation/Weather Theme */
+    
+    /* Airplane - right top */
+    body::after {
+        content: "✈️";
+        position: fixed;
+        right: 30px;
+        top: 15%;
+        font-size: 2.5rem;
         opacity: 0.15;
+        transform: rotate(-25deg);
+        pointer-events: none;
+        z-index: 0;
+        animation: subtlePulse 5s ease-in-out infinite;
     }
     
-    /* 2. Cards (The "Boarding Pass" Look) */
-    .stCard {
-        background-color: #ffffff;
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Soft shadow */
-        margin-bottom: 20px;
-        border-top: 5px solid #304CB2; /* Southwest Blue Header Line */
-        transition: all 0.3s ease;
-        animation: fadeInUp 0.6s ease-out;
+    /* Sun/Clear weather - right top */
+    [data-testid="stAppViewContainer"] .stApp::after {
+        content: "☀️";
+        position: fixed;
+        right: 35px;
+        top: 8%;
+        font-size: 2rem;
+        opacity: 0.2;
+        pointer-events: none;
+        z-index: 0;
+        animation: gentleSpin 20s linear infinite;
     }
     
-    .stCard:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(48, 76, 178, 0.15);
+    /* Radar circle - right middle */
+    body::before {
+        content: "";
+        position: fixed;
+        right: 25px;
+        top: 40%;
+        width: 65px;
+        height: 65px;
+        border: 2px dashed rgba(255, 182, 18, 0.15);
+        border-radius: 50%;
+        animation: radarPulse 3s ease-in-out infinite;
+        pointer-events: none;
+        z-index: 0;
     }
     
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    /* Barometer/Pressure gauge representation - right side */
+    [data-testid="stHeader"]::before {
+        content: "🌪️";
+        position: fixed;
+        right: 32px;
+        top: 60%;
+        font-size: 1.8rem;
+        opacity: 0.12;
+        pointer-events: none;
+        z-index: 0;
+        animation: spinSlow 10s linear infinite;
     }
     
-    /* 3. Headers */
-    h1, h2, h3 {
-        color: #304CB2 !important;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        font-weight: 800;
+    /* Snowflake - right bottom */
+    [data-testid="stHeader"]::after {
+        content: "❄️";
+        position: fixed;
+        right: 28px;
+        top: 75%;
+        font-size: 2rem;
+        opacity: 0.15;
+        pointer-events: none;
+        z-index: 0;
+        animation: gentleBob 6s ease-in-out infinite;
     }
     
-    /* 4. Southwest Striping (Decorative Line) */
-    .sw-stripe {
-        height: 6px;
-        width: 100%;
-        background: linear-gradient(90deg, #304CB2 33%, #C60C30 33%, #C60C30 66%, #FFB612 66%);
-        border-radius: 3px;
-        margin: 10px 0 25px 0;
-    }
-
-    /* 5. Score Box Styling */
-    .score-container {
-        background: linear-gradient(135deg, #304CB2, #1A2C75);
-        color: #ffffff;
-        padding: 30px;
-        border-radius: 20px;
-        text-align: center;
-        box-shadow: 0 8px 20px rgba(48, 76, 178, 0.3);
-        position: relative;
-        overflow: hidden;
-    }
-    .score-label {
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        color: #FFB612 !important; 
-        font-weight: 700;
-    }
-    .big-score {
-        font-size: 4rem;
-        font-weight: 900;
-        color: #ffffff !important;
-        margin: 5px 0;
-    }
-
-    /* 6. Buttons (Rounder & Bolder) */
-    button {
-        background-color: #304CB2 !important;
-        color: white !important;
-        border-radius: 50px !important; /* Pill shape */
-        font-weight: 700 !important;
-        padding: 0.5rem 1rem !important;
-        border: none !important;
-        transition: all 0.3s ease !important;
-    }
-    button:hover {
-        background-color: #253b8c !important;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(48, 76, 178, 0.3);
+    /* Animation Keyframes */
+    @keyframes gentleBob {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
     }
     
-    /* 7. Custom Tables */
-    .details-table td {
-        padding: 12px 5px;
-        border-bottom: 1px solid #f0f0f0;
-        color: #444;
+    @keyframes rotateCompass {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
-    .details-label {
-        font-weight: 700;
-        color: #304CB2;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
+    
+    @keyframes windSway {
+        0%, 100% { transform: translateX(0) rotate(0deg); }
+        50% { transform: translateX(5px) rotate(5deg); }
     }
-    .details-value {
-        font-weight: 600;
-        font-size: 1rem;
-        color: #222;
+    
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0.12; }
+        50% { opacity: 0.25; }
+    }
+    
+    @keyframes tempPulse {
+        0%, 100% { opacity: 0.18; transform: scale(1); }
+        50% { opacity: 0.3; transform: scale(1.05); }
+    }
+    
+    @keyframes subtlePulse {
+        0%, 100% { opacity: 0.15; transform: rotate(-25deg) scale(1); }
+        50% { opacity: 0.25; transform: rotate(-25deg) scale(1.05); }
+    }
+    
+    @keyframes gentleSpin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes radarPulse {
+        0%, 100% { transform: scale(1); opacity: 0.15; }
+        50% { transform: scale(1.15); opacity: 0.25; }
+    }
+    
+    @keyframes spinSlow {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 </style>
 """
